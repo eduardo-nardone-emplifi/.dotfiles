@@ -33,6 +33,7 @@ source <(fzf --zsh)
 
 # PROMPT
 setopt prompt_subst
-PS1='%F{yellow}_/%F{blue}%2~ $(git_branch_name)'
+PS1='%F{yellow}_/%F{blue}%2~ $(git_branch_name)
+'
 autoload -U promptinit
 promptinit
