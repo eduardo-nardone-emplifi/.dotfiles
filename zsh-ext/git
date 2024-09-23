@@ -3,9 +3,13 @@
 git_branch_name() {
   local git_branch
   local git_status
+  local project_name
 
   # Check if the current directory is a Git repository
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    # Get the project name (repository root folder name)
+    project_name=$(basename "$(git rev-parse --show-toplevel)")
+
     # Get the current branch name
     git_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
 
@@ -32,42 +36,45 @@ git_branch_name() {
 
     # Default color is white
     local git_color='%F{white}'
+    local status_text=""
 
     if [ -n "$git_merge_conflict" ]; then
       # Merge conflicts detected
       git_color='%F{magenta}'
-      git_status="${git_color}(MERGING: ${git_branch})%f"
+      status_text="MERGING"
     elif [ -n "$git_rebase" ]; then
       # Rebase in progress
       git_color='%F{yellow}'
-      git_status="${git_color}(REBASE: ${git_branch})%f"
+      status_text="REBASE"
     elif [ -n "$git_status_clean" ]; then
       if [ -n "$git_unstaged_changes" ]; then
         # Unstaged changes exist
         git_color='%F{red}'
-        git_status="${git_color}(UNSTAGED: ${git_branch})%f"
+        status_text="UNSTAGED"
       else
         # Uncommitted (staged) changes exist
         git_color='%F{red}'
-        git_status="${git_color}(STAGED: ${git_branch})%f"
+        status_text="STAGED"
       fi
     elif [ "$git_status_ahead" -gt 0 ] && [ "$git_status_behind" -gt 0 ]; then
       # Branch is both ahead and behind (diverged)
       git_color='%F{blue}'
-      git_status="${git_color}(DIVERGED: ${git_branch})%f"
+      status_text="DIVERGED"
     elif [ "$git_status_ahead" -gt 0 ]; then
       # Branch is ahead of upstream
       git_color='%F{cyan}'
-      git_status="${git_color}(AHEAD: ${git_branch})%f"
+      status_text="AHEAD"
     elif [ "$git_status_behind" -gt 0 ]; then
       # Branch is behind upstream
       git_color='%F{yellow}'
-      git_status="${git_color}(BEHIND: ${git_branch})%f"
+      status_text="BEHIND"
     else
       # Clean and up-to-date
       git_color='%F{green}'
-      git_status="${git_color}(${git_branch})%f"
+      status_text="CLEAN"
     fi
+
+    git_status="${git_color}${project_name}: ${git_branch} [${status_text}]%f"
   fi
 
   # Return the Git status info
