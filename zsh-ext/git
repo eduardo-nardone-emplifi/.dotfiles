@@ -1,7 +1,7 @@
 # ! /bin/sh
 
-unction git_branch_name(){
-local git_branch
+git_branch_name() {
+  local git_branch
   local git_status
 
   # Check if the current directory is a Git repository
@@ -9,28 +9,65 @@ local git_branch
     # Get the current branch name
     git_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
 
-    # Check for changes and ahead status
+    # Check for changes, ahead/behind status, merge conflicts, rebases, and unstaged changes
     local git_status_clean
     local git_status_ahead
+    local git_status_behind
+    local git_merge_conflict
+    local git_rebase
+    local git_unstaged_changes
 
     git_status_clean=$(git status --porcelain 2>/dev/null)
     git_status_ahead=$(git rev-list --count HEAD..@{upstream} 2>/dev/null)
+    git_status_behind=$(git rev-list --count @{upstream}..HEAD 2>/dev/null)
+
+    # Check if there are unstaged changes
+    git_unstaged_changes=$(git status --porcelain | grep '^.[^ ]' 2>/dev/null)
+
+    # Check if there is an ongoing merge
+    git_merge_conflict=$(git ls-files -u 2>/dev/null)
+
+    # Check if there is an ongoing rebase
+    git_rebase=$(git status | grep "rebase in progress" 2>/dev/null)
 
     # Default color is white
     local git_color='%F{white}'
 
-    if [ -n "$git_status_clean" ]; then
-      # Uncommitted changes exist
-      git_color='%F{red}'
+    if [ -n "$git_merge_conflict" ]; then
+      # Merge conflicts detected
+      git_color='%F{magenta}'
+      git_status="${git_color}(MERGING: ${git_branch})%f"
+    elif [ -n "$git_rebase" ]; then
+      # Rebase in progress
+      git_color='%F{yellow}'
+      git_status="${git_color}(REBASE: ${git_branch})%f"
+    elif [ -n "$git_status_clean" ]; then
+      if [ -n "$git_unstaged_changes" ]; then
+        # Unstaged changes exist
+        git_color='%F{red}'
+        git_status="${git_color}(UNSTAGED: ${git_branch})%f"
+      else
+        # Uncommitted (staged) changes exist
+        git_color='%F{red}'
+        git_status="${git_color}(STAGED: ${git_branch})%f"
+      fi
+    elif [ "$git_status_ahead" -gt 0 ] && [ "$git_status_behind" -gt 0 ]; then
+      # Branch is both ahead and behind (diverged)
+      git_color='%F{blue}'
+      git_status="${git_color}(DIVERGED: ${git_branch})%f"
     elif [ "$git_status_ahead" -gt 0 ]; then
-      # Ahead of upstream
-      git_color='%F{white}'
+      # Branch is ahead of upstream
+      git_color='%F{cyan}'
+      git_status="${git_color}(AHEAD: ${git_branch})%f"
+    elif [ "$git_status_behind" -gt 0 ]; then
+      # Branch is behind upstream
+      git_color='%F{yellow}'
+      git_status="${git_color}(BEHIND: ${git_branch})%f"
     else
-      # Clean and not ahead
+      # Clean and up-to-date
       git_color='%F{green}'
+      git_status="${git_color}(${git_branch})%f"
     fi
-
-    git_status="${git_color}(${git_branch})%f"
   fi
 
   # Return the Git status info
