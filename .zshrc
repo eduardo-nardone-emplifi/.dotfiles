@@ -32,9 +32,10 @@ source <(fzf --zsh)
 
 # PROMPT
 setopt prompt_subst
-PS1='%F{cyan}%~%K{black}  $(git_branch_name)
+PS1='%F{cyan}%~  $(git_branch_name)
 '
 RPROMPT='%F{green}$(date +"%H:%M:%S") %F{yellow}$(echo $?)s%f %F{yellow}$(if [[ $? -ne 0 ]]; then echo "✖"; else echo "✔"; fi)%f'
 
 autoload -U promptinit
 promptinit
+
